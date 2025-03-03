@@ -12,8 +12,8 @@
   ****************************************************************
 */
 
-include <trayfinity-constants.scad>
-use <trayfinity-modules.scad>
+include <./trayfinity-constants.scad>
+use <./trayfinity-modules.scad>
 
 /* [ Dimensions and layout ] */
 // X dimension in grid units
@@ -84,11 +84,17 @@ text_margin_v = 0.0;  // .5
 
 /* [ Output options ] */
 // What to render
-generate = "all"; // [ "all", "tray", "label texts" ]
+generate = "all"; // [ "all", "tray", "label texts", "brim" ]
 // Which color labels to render
 color_selection = "all";
 // Add extra feature in attachement holes to use bridges for the hole ceiling. Will be done when both screws and magnets are enabled.
 attachment_overhang_remedy = true;
+// set to 0 to not generate a brim, minimum 0.4
+brim_width = 4;  // .25
+// maximum 2.6
+brim_height = 2; // .1
+// distance between brim and first layer of tray
+brim_separation_gap = 0.1; // .01
 
 // How detailed the model will be rendered. A circle will have at most 360/fa segments
 fa_final = 2;
@@ -154,7 +160,10 @@ tray_definition = build_tray_definition(
   screw_depth = screw_depth, 
   corner_attachments_only = corner_attachments_only,
   attachment_overhang_remedy = attachment_overhang_remedy,
-  bottom_interface_divide = bottom_interface_divide
+  bottom_interface_divide = bottom_interface_divide,
+  brim_width = brim_width,
+  brim_height = brim_height,
+  brim_separation_gap = brim_separation_gap
 );    
 
 union() {
@@ -175,5 +184,11 @@ union() {
         color_selection = color_selection
       );
     }
+  }
+
+  if (generate == "brim" || generate == "all") {
+    tray_brim(
+      tray_definition = tray_definition
+    );
   }
 }
