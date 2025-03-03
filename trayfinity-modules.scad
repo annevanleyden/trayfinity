@@ -356,7 +356,7 @@ function build_tray_definition(
   layout = default_layout,
   column_widths = [],
   row_depths = [],
-  // these properties are shared with cell properties
+  // these properties are are also present at the cell level
   fingerslide_radius = default_fingerslide_radius, 
   floor_thickness = default_floor_thickness,
   fillet_radius = default_fillet_radius,
@@ -532,12 +532,16 @@ function cell(
 function find_cells(tray_definition, ref) = 
   _find_cells(ref, tray_definition[GRIDDED_LAYOUT], 0, 0); 
   
-function generate_layout(num_columns = 2, num_rows = 1) =
+function generate_layout(
+    num_columns = 2, 
+    num_rows = 1,
+    label_texts
+) =
 [
   for (row = [1:num_rows]) 
     row(
       [
-        for (col = [1:num_columns]) cell() 
+        for (col = [1:num_columns]) cell(label_text = label_texts[(row - 1) * num_columns + col - 1])
       ]
     )
 ];

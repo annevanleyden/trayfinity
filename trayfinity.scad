@@ -58,7 +58,7 @@ fillet_radius = 0; // .25
 floor_thickness = 0.8; // .1
 
 /* [ Labels ] */
-// Include overhang for labeling. Can be specified per cell. 
+// Include overhang for labeling. 
 label_placement = "all"; // [ "single", "column", "row", "all", "none" ]
 // Alignment of the label. Can be specified per cell.
 label_align = "left"; // [ "left", "right", "center", "full" ]
@@ -66,6 +66,8 @@ label_align = "left"; // [ "left", "right", "center", "full" ]
 label_width = 30;  // 1
 // Depth of the label in mm.
 label_depth = 10;  // .5
+// Texts of the labels, from left to right and bottom to top
+label_texts = ["label 1", "label 2", "label 3"];
 // Font name. See the OpenSCAD documentation of the text() function for options (eg. bold).
 font = "Liberation Sans";
 // Font size (roughly vertical size of text in mm)
@@ -112,7 +114,11 @@ module customizer_end() {}
 
 layout = 
   use_generated_layout
-  ? generate_layout(num_columns = num_columns, num_rows = num_rows)
+  ? generate_layout(
+        num_columns = num_columns, 
+        num_rows = num_rows,
+        label_texts = label_texts
+    )
   : [
       row(
         [ 
@@ -130,7 +136,7 @@ layout =
           cell(1, 1, label_text = "washers", font_size = 3.0, ref = "washers")
         ]
       )
-    ];
+    ];  
  
 tray_definition = build_tray_definition(
   width_units = width_units,
