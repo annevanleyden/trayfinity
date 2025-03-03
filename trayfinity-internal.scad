@@ -532,7 +532,7 @@ module _rounded_shape(straight_length_x, straight_length_y) {
       for (y = [0:1]) 
         translate([straight_length_x * x, straight_length_y * y, 0])
         rotate([0, 0, 180 + 90 * x - 90 * y + 180 * x * y]) {
-          _wall_with_corner(length = x == y ? straight_length_y : straight_length_x)
+          _straight_with_rounded_corner(length = x == y ? straight_length_y : straight_length_x)
             children();
         }
   }
@@ -553,7 +553,7 @@ module _rectangle_pattern(dist_x, dist_y) {
 /*
   Create a straight shape with a 90% bend at one end from a 2d profile.
 */
-module _wall_with_corner(length) {
+module _straight_with_rounded_corner(length) {
   rotate_extrude(angle = 90)
   children();
   rotate([90, 0, 0])
