@@ -586,48 +586,21 @@ function build_gridded_layout(
   layout,
   tray_properties,
   column_widths,
-  row_depths, 
-  divider_thickness,
-  screw_depth
+  row_depths
 ) =
-  let(rowspan_inserts = 
-    [
-      for (col = [0:num_cols(layout) - 1])
-      [
-        for (row = [0:num_rows(layout) - 1])
-          let(rowspan = layout[row][col][1])
-          if (rowspan != undef && rowspan > 1) 
-            for (spanned_row = [1:rowspan - 1])
-              row + spanned_row
-      ]  
-    ]
+  let(gridded_layout = 
+    add_cells(
+      target_row = 0, 
+      src_row = 0, 
+      src_col = 0, 
+      layout = layout, 
+      gridded_layout = []
+    )
   )
-  let(gridded_layout =  
-    [  
-      for (row = [0:num_rows(layout) - 1])
-        [
-          for (
-            src_col = 0,
-            dest_col = 0,
-            num_cols = len(layout[row]),
-            src_col_skip = 0;
-
-            dest_col < num_cols;
-           
-            src_col_skip = search(row, rowspan_inserts[dest_col]) ? 0 : 1,
-            dest_col = dest_col + 1, 
-            src_col = src_col + src_col_skip,
-            num_cols = num_cols + 1 - src_col_skip
-          )
-            search(row, rowspan_inserts[dest_col])
-              ? DUMMY_CELL
-              : layout[row][src_col]            
-        ]
-    ]
-  )
-  /* We could have a jagged layout if not all cells were defined. Fill out all rows
-     with empty cells so we have a nice regular grid with equal number of cells in
-     each rowith an unequalfill out all the rows with empty cells.
+  
+  /* 
+    We could have a jagged right side if not every row is correctly filled . Fill out all rows
+    with empty cells so we have a nice regular grid with equal number of cells in each row.
   */
   let(num_cols = num_cols(gridded_layout))
   let(regular_gridded_layout =
@@ -635,7 +608,7 @@ function build_gridded_layout(
       for (grid_row = gridded_layout)
         complete(grid_row, num_cols, DUMMY_CELL)
     ]
-  )  
+  )
 
   add_cell_positions_and_sizes(
     gridded_layout = regular_gridded_layout,
@@ -647,8 +620,103 @@ function build_gridded_layout(
     row_depths = complete(row_depths, num_rows(gridded_layout), 1)
   );
 
+function add_cells(target_row, src_row, src_col, layout, gridded_layout) =
+  let(cell = layout[src_row][src_col])
+  let(rowspan = cell[ROWSPAN] != undef ? cell[ROWSPAN] : 1)
+  let(colspan = cell[COLSPAN] != undef ? cell[COLSPAN] : 0)
+    
+  let(completed_rows =
+    [
+      for (row = 0; row < target_row; row = row + 1)
+        gridded_layout[row]
+    ]
+  )
+         
+  let(next_available_col = 
+    find_next_available_col(
+      needed_empty_space = colspan, 
+      gridded_row = gridded_layout[target_row], 
+      start = src_col,
+      end = src_col
+    )
+  )
+
+  let(new_target_row = 
+    [
+      if (gridded_layout[target_row] != undef) for (col = 0; col < next_available_col; col = col + 1)
+        gridded_layout[target_row][col],
+      if (cell != undef) cell,
+      for (col = 1; col < colspan; col = col + 1)
+        DUMMY_CELL,
+      if (gridded_layout[target_row] != undef) for (
+        col = next_available_col + colspan;
+        col < len(gridded_layout[target_row]);
+        col = col + 1
+      )
+        gridded_layout[target_row][col]
+    ]
+  )
+
+  let(rowspan_rows =
+    [
+      for (row = target_row + 1; row < target_row + rowspan; row = row + 1)
+      [
+        for (col = 0; col < next_available_col; col = col + 1)
+          gridded_layout[row] == undef ? undef : gridded_layout[row][col],
+        for (col = 0; col < colspan; col = col + 1)
+          DUMMY_CELL,
+        if (gridded_layout[row] != undef) for (col = next_available_col + colspan; col < len(gridded_layout[row]); col = col + 1)
+          gridded_layout[row][col]
+      ]
+    ]
+  )
+
+  let(trailing_rows = 
+    [     
+      for (row = target_row + rowspan; row < len(gridded_layout); row = row + 1)
+        gridded_layout[row]
+    ]
+  )    
+
+  let(new_gridded_layout =
+    join(
+      completed_rows, 
+      [new_target_row],
+      rowspan_rows,
+      trailing_rows  
+    )
+  )
+
+  src_col < len(layout[src_row]) - 1
+    ? add_cells(
+        target_row = target_row, 
+        src_row = src_row, 
+        src_col = src_col + 1,
+        layout = layout, 
+        gridded_layout = new_gridded_layout
+      )
+    : (src_row < len(layout) - 1
+        ? add_cells(
+            target_row = target_row + 1, 
+            src_row = src_row + 1,
+            src_col = 0, 
+            layout = layout, 
+            gridded_layout = new_gridded_layout
+          )
+        : new_gridded_layout
+      );
+
+function find_next_available_col(needed_empty_space, gridded_row, start, end) =
+  gridded_row == undef || gridded_row[end] == undef
+    ?  (end - start + 1 >= needed_empty_space || needed_empty_space == undef 
+        ? start
+        : find_next_available_col(needed_empty_space, gridded_row, start, end + 1)
+      )
+    :
+      find_next_available_col(needed_empty_space, gridded_row, end + 1, end + 1);
+
 /* 
-  Augment the gridded_layout with the positions and sizes of each cell.
+  Augment the gridded_layout with the position and size of each cell.
 */
 function add_cell_positions_and_sizes(
   gridded_layout,
@@ -775,7 +843,13 @@ function num_cols(layout) =
   max([for (grid_row = layout) len(grid_row)]);
   
 function num_rows(layout) =
-  max([for (row = [0:len(layout) - 1]) for (col = [0:len(layout[row]) - 1]) row + get_rowspan(layout[row], col) ]);
+  max(
+    [
+      for (row = [0:len(layout) - 1]) 
+        for (col = 0; col < len(layout[row]); col = col + 1)
+          row + get_rowspan(layout[row], col) 
+    ]
+  );
 
 /*
   Get the rowspan of a cell, default to 1 if not specified.
@@ -925,12 +999,19 @@ function sum(numbers, start = 0) =
                                          : numbers[start] + sum(numbers, start + 1);  
 
 /*
-  Join two arrays
+  Join arrays (max 9)
 */
-function join(array1, array2) =
+function join(array1, array2, array3, array4, array5, array6, array7, array8, array9) =
   [
     if (array1 != undef) for (element = array1) element, 
-    if (array2 != undef) for (element = array2) element
+    if (array2 != undef) for (element = array2) element,
+    if (array3 != undef) for (element = array3) element,
+    if (array4 != undef) for (element = array4) element,
+    if (array5 != undef) for (element = array5) element,
+    if (array6 != undef) for (element = array6) element,
+    if (array7 != undef) for (element = array7) element,
+    if (array8 != undef) for (element = array8) element,
+    if (array9 != undef) for (element = array9) element
   ];
  
 // Utility function to fill an array to a certain size using the given element

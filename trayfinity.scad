@@ -92,7 +92,7 @@ color_selection = "all";
 // Add extra feature in attachement holes to use bridges for the hole ceiling. Will be done when both screws and magnets are enabled.
 attachment_overhang_remedy = true;
 // set to 0 to not generate a brim, minimum 0.4
-brim_width = 4;  // .25
+brim_width = 3.5;  // .25
 // maximum 2.6
 brim_height = 2; // .1
 // distance between brim and first layer of tray
@@ -126,7 +126,7 @@ layout =
           cell(1, 1, label_text = "M3x16"),
           cell(1, 1, label_text = "M3x20", ref="m3x20"),
           cell(1, 1, label_text = "M3x25"),
-          cell(1, 2, label_placement = "none", fingerslide_radius = 0, floor_thickness = 10, ref="toolholder")
+          cell(1, 2, label_placement = "none", fingerslide_radius = 0, floor_thickness = 5, ref="toolholder")
         ]
       ),
       row(
@@ -170,7 +170,7 @@ tray_definition = build_tray_definition(
   brim_width = brim_width,
   brim_height = brim_height,
   brim_separation_gap = brim_separation_gap
-);    
+);
 
 union() {
   if (generate == "label texts" || generate == "all") { 
